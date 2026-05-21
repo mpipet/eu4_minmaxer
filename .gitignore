@@ -1,4 +1,6 @@
 .env
+.env.prod
+.env.data
 __pycache__
 api/images/*
 api/en.json
