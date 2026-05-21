@@ -1,0 +1,162 @@
+services:
+  # =============================================================================
+  # NGINX - Reverse Proxy & Static Frontend
+  # =============================================================================
+  nginx:
+    image: nginx-prod:latest
+    build:
+      context: ./nginx
+    container_name: eu4-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Let's Encrypt certificates
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - frontend_static:/usr/share/nginx/html:ro
+      - ./volumes/nginx/logs:/var/log/nginx
+    networks:
+      - eu4-network
+    depends_on:
+      - api
+      - front
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # CERTBOT - Let's Encrypt
+  # =============================================================================
+  certbot:
+    image: certbot/certbot
+    container_name: eu4-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: version
+
+  # =============================================================================
+  # ELASTICSEARCH
+  # =============================================================================
+  es:
+    hostname: es
+    container_name: "es01"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}"
+    mem_limit: ${ES_MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - ${ES_EXTERNAL_PORT}:9200
+    volumes:
+      # Mount custom certificates
+      - ./cert/http_ca.crt:/usr/share/elasticsearch/config/certs/http_ca.crt:ro
+      - ./cert/http.p12:/usr/share/elasticsearch/config/certs/http.p12:ro
+      - ./cert/truststore.p12:/usr/share/elasticsearch/config/certs/truststore.p12:ro
+      # Data persistence
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - node.name=es01
+      - cluster.name=${CLUSTER_NAME}
+      - discovery.type=single-node
+      - indices.query.bool.max_clause_count=4096
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
+      # Enable security with custom certificate
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.keystore.path=certs/http.p12
+      - xpack.security.http.ssl.keystore.password=${ES_KEYSTORE_PASSWORD}
+      - xpack.security.http.ssl.truststore.path=certs/truststore.p12
+      - xpack.security.http.ssl.truststore.password=${ES_KEYSTORE_PASSWORD}
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.http.ssl.client_authentication=none
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s --cacert /usr/share/elasticsearch/config/certs/http_ca.crt -u elastic:${ES_PASSWORD} https://es:9200/_cluster/health | grep -q '\"status\":\"\\(green\\|yellow\\)\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - eu4-network
+
+  # =============================================================================
+  # API (BACKEND FLASK)
+  # =============================================================================
+  api:
+    image: api-prod:latest
+    build:                           
+      context: ./api             
+      target: production
+    container_name: eu4-api
+    volumes:
+      - ./volumes/backend:/app/data
+      - ./cert/http_ca.crt:/cert/http_ca.crt:ro
+    environment:
+      ES_USER: ${ES_USER}
+      ES_PASSWORD: ${ES_PASSWORD}
+      ES_PORT: ${ES_PORT}
+      ES_HOST: ${ES_HOST}
+      ES_SSL_CERT: ${ES_SSL_CERT}
+      ES_SSL_KEY: ${ES_SSL_KEY}
+      DEFAULT_PAGE_SIZE: ${DEFAULT_PAGE_SIZE}
+      DEFAULT_PAGE: ${DEFAULT_PAGE}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    stop_signal: SIGINT
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+    depends_on:
+      es:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - eu4-network
+
+  front:
+    image: front-prod:latest
+    build:
+      context: ./front
+      target: production
+      args:
+        API_URL: ${API_URL}
+    container_name: eu4-front-builder
+    volumes:
+      - frontend_static:/tmp
+    command: sh -c "cp -r /output/* /tmp/ && echo 'Frontend copied' && tail -f /dev/null"
+    networks:
+      - eu4-network
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  frontend_static:
+  es_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  eu4-network:
+    driver: bridge

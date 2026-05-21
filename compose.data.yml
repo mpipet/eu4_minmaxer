@@ -1,0 +1,26 @@
+services:
+  api: 
+    image: api-data:latest
+    build: 
+      context: ./api
+      target: development
+    container_name: eu4-api-data
+    volumes: [
+      './api:/app',
+      './cert:/cert',
+      "/mnt/c/Program Files (x86)/Steam/steamapps/common/Europa Universalis IV:/eu4:ro",
+    ]
+    stop_signal: SIGINT
+    environment:
+      EU4_PATH: ${EU4_PATH}
+      ES_USER: ${ES_USER}
+      ES_PASSWORD: ${ES_PASSWORD}
+      ES_PORT: ${ES_PORT}
+      ES_HOST: ${ES_HOST}
+      ES_SSL_CERT: ${ES_SSL_CERT}
+      ES_SSL_KEY: ${ES_SSL_KEY}
+      DEFAULT_PAGE_SIZE: ${DEFAULT_PAGE_SIZE}
+      DEFAULT_PAGE: ${DEFAULT_PAGE}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    ports:
+      - 8000:8000
