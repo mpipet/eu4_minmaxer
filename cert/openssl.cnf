@@ -1,0 +1,25 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = FR
+ST = Nouvelle-Aquitaine
+L = Bordeaux
+O = EU4MinMaxer
+OU = IT
+CN = es
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = es
+DNS.2 = es01
+DNS.3 = localhost
+DNS.4 = minmaxer.eu
+DNS.5 = es.minmaxer.eu
+IP.1 = 127.0.0.1
