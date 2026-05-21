@@ -1,0 +1,6 @@
+.env
+__pycache__
+api/images/*
+api/en.json
+api/test
+api/test.py

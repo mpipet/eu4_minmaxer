@@ -1,0 +1,10 @@
+dotenv==0.9.9
+elastic-transport==9.2.1
+elasticsearch==9.2.1
+Flask==3.1.2
+flask-cors==6.0.2
+gunicorn==25.0.0
+python-dotenv==1.2.1
+pyparsing==3.3.2
+standard-imghdr==3.13.0
+wand==0.6.13
