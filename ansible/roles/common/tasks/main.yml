@@ -1,0 +1,46 @@
+
+- name: Update packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+  tags: update
+
+- name: Install monitoring packages
+  apt:
+    name: "{{ monitoring_packages }}"
+    state: present
+  tags: packages
+
+- name: Install security packages
+  apt:
+    name: "{{ security_packages }}"
+    state: present
+  tags: packages
+
+- name: Configure timzone
+  timezone:
+    name: "{{ server_timezone }}"
+  tags: timezone
+
+- name: Install et configure systemd-timesyncd (NTP)
+  block:
+    - name: Install systemd-timesyncd
+      apt:
+        name: systemd-timesyncd
+        state: present
+    
+    - name: Activate systemd-timesyncd
+      systemd:
+        name: systemd-timesyncd
+        enabled: yes
+        state: started
+    
+    - name: Configure NTP
+      command: timedatectl set-ntp true
+  tags: ntp
+
+- name: Clean packages
+  apt:
+    autoremove: yes
+    autoclean: yes
+  tags: cleanup

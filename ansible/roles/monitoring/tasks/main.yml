@@ -1,0 +1,98 @@
+- name: Install Logwatch
+  apt:
+    name: logwatch
+    state: present
+  when: logwatch_enabled
+  tags: monitoring
+
+- name: Create Logwatch cron script
+  template:
+    src: logwatch.j2
+    dest: /etc/cron.daily/00logwatch
+    owner: root
+    group: root
+    mode: '0755'
+  when: logwatch_enabled
+  tags: monitoring
+
+- name: Install rkhunter (rootkit hunter)
+  apt:
+    name: rkhunter
+    state: present
+  tags: monitoring
+
+- name: Fix configuration WEB_CMD
+  replace:
+    path: /etc/rkhunter.conf
+    regexp: '^WEB_CMD=.*$'
+    replace: 'WEB_CMD=/bin/false'
+  when: rkhunter_enabled | default(true)
+  tags: monitoring
+
+- name: Update rkhunter database
+  command: rkhunter --update --nocolors
+  register: rkhunter_update
+  changed_when: false
+  failed_when: false
+  tags: monitoring
+
+- name: Configure rkhunter
+  lineinfile:
+    path: /etc/rkhunter.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?MAIL-ON-WARNING=', line: 'MAIL-ON-WARNING="{{ admin_email }}"' }
+    - { regexp: '^#?UPDATE_MIRRORS=', line: 'UPDATE_MIRRORS=1' }
+    - { regexp: '^#?MIRRORS_MODE=', line: 'MIRRORS_MODE=0' }
+    - { regexp: '^#?WEB_CMD=', line: 'WEB_CMD="/bin/false"' }
+  tags: monitoring
+
+- name: Create rkhunter cron
+  cron:
+    name: "Run rkhunter daily"
+    minute: "0"
+    hour: "3"
+    job: "/usr/bin/rkhunter --cronjob --update --quiet"
+    user: root
+  tags: monitoring
+
+- name: Create monitoring alias
+  lineinfile:
+    path: /home/{{ deploy_user }}/.bashrc
+    line: "{{ item }}"
+    create: yes
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+  loop:
+    - "alias ports='sudo ss -tulpn'"
+    - "alias listening='sudo lsof -i -P -n | grep LISTEN'"
+    - "alias firewall='sudo ufw status verbose'"
+    - "alias banned='sudo fail2ban-client status sshd'"
+  tags: monitoring
+
+- name: Install and configure auditd
+  block:
+    - name: Install auditd
+      apt:
+        name: auditd
+        state: present
+    
+    - name: Make auditd start on boot
+      systemd:
+        name: auditd
+        enabled: yes
+        state: started
+  tags: monitoring
+
+- name: Print available monitoring commands
+  debug:
+    msg: |
+      📊 Commandes de monitoring disponibles :
+      - htop : Interactive proc monitor
+      - glances : Monitoring dashboard
+      - sudo ufw status verbose : Firewall status
+      - sudo fail2ban-client status : Fail2Ban Status
+      - sudo rkhunter --check : Check rootkits
+      - sudo ss -tulpn : See listening ports
+  tags: monitoring

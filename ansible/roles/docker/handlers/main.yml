@@ -1,0 +1,12 @@
+---
+# =============================================================================
+# HANDLERS - Docker service management
+# =============================================================================
+
+# Restart Docker daemon
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: yes
+  listen: "restart docker"

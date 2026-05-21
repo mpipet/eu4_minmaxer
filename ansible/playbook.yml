@@ -1,0 +1,54 @@
+- name: Secure EU4 min max project
+  hosts: webservers
+  become: yes
+  vars_files:
+    - vars.yml
+  
+  pre_tasks:
+    - name: Print message on startup
+      debug:
+        msg: "Securing server {{ inventory_hostname }}"
+    
+    - name: update APT cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: always
+
+  roles:
+    - role: common
+      tags: common
+    
+    - role: user
+      tags: user
+    
+    - role: firewall
+      tags: firewall
+    
+    - role: ssh
+      tags: ssh
+    
+    - role: fail2ban
+      tags: fail2ban
+    
+    - role: security
+      tags: security
+    
+    - role: monitoring
+      tags: monitoring
+
+    - role: docker     
+      tags: docker
+
+  post_tasks:
+    - name: end message
+      debug:
+        msg: |
+          ✅ Secure complete !
+          
+          📋 Next steps :
+          1. Test SSH connexion : ssh -p {{ ssh_port }} {{ deploy_user }}@{{ inventory_hostname }}
+          2. Check firewall : sudo ufw status
+          3. Check Fail2Ban : sudo fail2ban-client status
+          
+          ⚠️  IMPORTANT : DO NOT CLOSE this session before testing !

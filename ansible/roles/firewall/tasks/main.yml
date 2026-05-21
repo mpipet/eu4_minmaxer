@@ -1,0 +1,46 @@
+
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+  tags: firewall
+
+- name: Configure default rules
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: 'incoming', policy: "{{ ufw_default_incoming }}" }
+    - { direction: 'outgoing', policy: "{{ ufw_default_outgoing }}" }
+  tags: firewall
+
+- name: Authorize defined ports
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ ufw_allowed_ports }}"
+  tags: firewall
+
+- name: Activate UFW
+  ufw:
+    state: enabled
+  tags: firewall
+
+- name: Make UFW starting on boot
+  systemd:
+    name: ufw
+    enabled: yes
+  tags: firewall
+
+- name: Get UFW status
+  command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+  tags: firewall
+
+- name: Print UFW status
+  debug:
+    var: ufw_status.stdout_lines
+  tags: firewall

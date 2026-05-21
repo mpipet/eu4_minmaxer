@@ -1,0 +1,53 @@
+
+- name: Create deploy user group
+  group:
+    name: "{{ deploy_user }}"
+    state: present
+  tags: user
+
+- name: Create deploy user
+  user:
+    name: "{{ deploy_user }}"
+    shell: "{{ deploy_user_shell }}"
+    groups: sudo
+    append: yes
+    createhome: yes
+    state: present
+  tags: user
+
+- name: Create .ssh user folder
+  file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0700'
+  tags: user
+
+- name: Add SSH public key
+  authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ deploy_user_ssh_key }}"
+    state: present
+  when: deploy_user_ssh_key is defined
+  tags: user
+
+- name: Configure sudo whithout password
+  lineinfile:
+    path: /etc/sudoers.d/{{ deploy_user }}
+    line: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  tags: user
+
+- name: Check user can run sudo
+  command: sudo -l -U {{ deploy_user }}
+  register: sudo_check
+  changed_when: false
+  tags: user
+
+- name: Print sudo privileges
+  debug:
+    var: sudo_check.stdout_lines
+  tags: user

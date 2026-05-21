@@ -1,0 +1,77 @@
+
+Port {{ ssh_port }}
+
+
+Protocol 2
+
+
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# Host keys
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+
+# Logging
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+
+LoginGraceTime 30
+PermitRootLogin {{ ssh_permit_root_login }}
+StrictModes yes
+MaxAuthTries {{ ssh_max_auth_tries }}
+MaxSessions {{ ssh_max_sessions }}
+
+
+PubkeyAuthentication {{ ssh_pubkey_authentication }}
+AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2
+
+
+PasswordAuthentication {{ ssh_password_authentication }}
+PermitEmptyPasswords {{ ssh_permit_empty_passwords }}
+
+
+ChallengeResponseAuthentication no
+
+# Kerberos options
+KerberosAuthentication no
+
+# GSSAPI options
+GSSAPIAuthentication no
+
+# PAM
+UsePAM yes
+
+# Forwarding
+AllowAgentForwarding no
+AllowTcpForwarding no
+X11Forwarding no
+PrintMotd no
+TCPKeepAlive yes
+
+# Keep alive
+ClientAliveInterval {{ ssh_client_alive_interval }}
+ClientAliveCountMax {{ ssh_client_alive_count_max }}
+
+# Sftp
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+
+AllowUsers {{ ssh_allowed_users }}
+
+# Banner
+Banner none
+
+# Compression
+Compression delayed
+
+# Accept locale-related environment variables
+AcceptEnv LANG LC_*

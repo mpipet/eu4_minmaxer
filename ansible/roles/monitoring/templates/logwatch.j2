@@ -1,0 +1,8 @@
+#!/bin/bash
+
+/usr/sbin/logwatch \
+    --output {{ logwatch_output }} \
+    --mailto {{ logwatch_email }} \
+    --detail {{ logwatch_detail }} \
+    --range {{ logwatch_range }} \
+    --service all

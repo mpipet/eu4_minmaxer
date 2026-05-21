@@ -1,0 +1,68 @@
+---
+
+- name: Backup current SSH configuration
+  copy:
+    src: /etc/ssh/sshd_config
+    dest: /etc/ssh/sshd_config.backup
+    remote_src: yes
+  tags: ssh
+
+- name: Deploy new SSH configuration
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+    validate: '/usr/sbin/sshd -t -f %s'
+    backup: yes
+  register: sshd_config_changed
+  tags: ssh
+- name: Disable and mask ssh.socket completely
+  systemd:
+    name: ssh.socket
+    enabled: no
+    masked: yes
+    state: stopped
+  ignore_errors: yes
+  tags: ssh
+
+- name: Stop SSH service
+  systemd:
+    name: ssh
+    state: stopped
+  when: sshd_config_changed.changed
+  tags: ssh
+
+- name: Start SSH with new configuration
+  systemd:
+    name: ssh
+    state: started
+    daemon_reload: yes
+  when: sshd_config_changed.changed
+  tags: ssh
+
+- name: Ensure SSH starts on boot
+  systemd:
+    name: ssh
+    enabled: yes
+  tags: ssh
+
+- name: Wait for SSH to be available
+  wait_for:
+    port: "{{ ssh_port }}"
+    host: 0.0.0.0
+    delay: 3
+    timeout: 30
+  tags: ssh
+
+- name: Display important warning
+  debug:
+    msg: |
+      ✅ SSH configured on port {{ ssh_port }}
+      
+      ⚠️  Test NOW in a new terminal:
+      ssh -p {{ ssh_port }} {{ deploy_user }}@{{ inventory_hostname }}
+      
+      ⚠️  DO NOT CLOSE this session before testing!
+  tags: ssh

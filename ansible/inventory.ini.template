@@ -1,0 +1,5 @@
+[webservers]
+eu4-prod ansible_host=myServerIp ansible_port=2222 ansible_user=deploy
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

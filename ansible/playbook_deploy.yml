@@ -1,0 +1,212 @@
+---
+# =============================================================================
+# PLAYBOOK: DEPLOY EU4 APPLICATION
+# Description: Deploy EU4 MinMaxer to production server
+# =============================================================================
+
+- name: Deploy EU4 MinMaxer application
+  hosts: webservers
+  become: yes
+  vars_files:
+    - vars.yml
+
+  vars:
+    # Project configuration
+    project_name: "eu4-minmaxer"
+    deploy_dir: "/opt/{{ project_name }}"
+    deploy_user: "deploy"
+    
+    # Docker images to deploy
+    docker_images:
+      - name: "api-prod"
+        path: "../api"  # ← Relatif depuis playbook_dir
+        tag: "latest"
+      - name: "front-prod"
+        path: "../front"  # ← Relatif depuis playbook_dir
+        tag: "latest" 
+      - name: "nginx-prod"
+        path: "../nginx"  # ← Relatif depuis playbook_dir
+        tag: "latest" 
+
+  tasks:
+    # =============================================================================
+    # PREPARATION
+    # =============================================================================
+    
+    - name: Create deployment directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+      loop:
+        - "{{ deploy_dir }}"
+        - "{{ deploy_dir }}/cert"
+        - "{{ deploy_dir }}/volumes"
+        - "{{ deploy_dir }}/volumes/api"
+      tags: deploy
+
+    # =============================================================================
+    # COPY CONFIGURATION FILES
+    # =============================================================================
+    
+    - name: Copy docker-compose.yml
+      copy:
+        src: "{{ playbook_dir }}/../compose.prod.yml"
+        dest: "{{ deploy_dir }}/docker-compose.yml"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0644'
+      tags: deploy
+
+    - name: Copy nginx directory
+      copy:
+        src: "{{ playbook_dir }}/../nginx/"
+        dest: "{{ deploy_dir }}/nginx/"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+      tags: deploy
+
+    - name: Copy .env file
+      copy:
+        src: "{{ playbook_dir }}/../.env.prod"
+        dest: "{{ deploy_dir }}/.env"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0600'
+      tags: deploy
+
+    - name: Copy Elasticsearch certificates
+      copy:
+        src: "{{ playbook_dir }}/../cert/{{ item }}"
+        dest: "{{ deploy_dir }}/cert/{{ item }}"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0644'
+      loop:
+        - http_ca.crt
+        - http.p12
+        - truststore.p12
+      tags: deploy
+
+    # =============================================================================
+    # BUILD AND TRANSFER DOCKER IMAGES
+    # =============================================================================
+    - name: Build Docker images with docker-compose
+      delegate_to: localhost
+      become: no
+      shell: |
+        cd {{ playbook_dir }}/..
+        docker compose -f compose.prod.yml --env-file .env.prod build
+      tags: build
+
+    - name: Save Docker images to tar
+      delegate_to: localhost
+      become: no
+      command: "docker save -o /tmp/{{ item.name }}.tar {{ item.name }}:{{ item.tag }}"
+      loop: "{{ docker_images }}"
+      tags: build
+
+    - name: Copy Docker images to server
+      copy:
+        src: "/tmp/{{ item.name }}.tar"
+        dest: "/tmp/{{ item.name }}.tar"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+      loop: "{{ docker_images }}"
+      tags: build
+
+    - name: Load Docker images on server
+      command: "docker load -i /tmp/{{ item.name }}.tar"
+      loop: "{{ docker_images }}"
+      become_user: "{{ deploy_user }}"
+      tags: build
+
+    - name: Clean up tar files on server
+      file:
+        path: "/tmp/{{ item.name }}.tar"
+        state: absent
+      loop: "{{ docker_images }}"
+      tags: build
+
+    - name: Clean up local tar files
+      delegate_to: localhost
+      become: no
+      file:
+        path: "/tmp/{{ item.name }}.tar"
+        state: absent
+      loop: "{{ docker_images }}"
+      tags: build
+
+    # =============================================================================
+    # DEPLOY CONTAINERS
+    # =============================================================================
+    
+    - name: Stop existing containers
+      command: docker-compose down nginx api front
+      args:
+        chdir: "{{ deploy_dir }}"
+      become_user: "{{ deploy_user }}"
+      ignore_errors: yes
+      tags: deploy
+
+    - name: Start containers
+      command: docker-compose up -d
+      args:
+        chdir: "{{ deploy_dir }}"
+      become_user: "{{ deploy_user }}"
+      tags: deploy
+
+    - name: Wait for containers to start
+      pause:
+        seconds: 30
+      tags: deploy
+
+    - name: Check container status
+      command: docker-compose ps
+      args:
+        chdir: "{{ deploy_dir }}"
+      register: container_status
+      become_user: "{{ deploy_user }}"
+      tags: deploy
+
+    - name: Display container status
+      debug:
+        var: container_status.stdout_lines
+      tags: deploy
+
+  post_tasks:
+    # =============================================================================
+    # CERTIFICATE RENEWAL CRON
+    # =============================================================================
+    
+    - name: Create certificate renewal script
+      copy:
+        dest: "{{ deploy_dir }}/renew-certs.sh"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          cd {{ deploy_dir }}
+          docker-compose run --rm certbot renew
+          docker-compose exec nginx nginx -s reload
+          echo "$(date): Certificate renewal check completed" >> /var/log/certbot-renew.log
+      tags: deploy
+
+    - name: Setup cron job for certificate renewal
+      cron:
+        name: "Renew Let's Encrypt certificates"
+        minute: "0"
+        hour: "3"
+        job: "{{ deploy_dir }}/renew-certs.sh"
+        user: "{{ deploy_user }}"
+      become: yes
+      tags: deploy
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ✅ Deployment completed!

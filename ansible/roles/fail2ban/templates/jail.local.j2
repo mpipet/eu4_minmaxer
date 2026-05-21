@@ -1,0 +1,70 @@
+[DEFAULT]
+# Ban settings
+bantime = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+
+# Email settings
+destemail = {{ fail2ban_destemail }}
+sendername = {{ fail2ban_sender }}
+mta = sendmail
+action = {{ fail2ban_action }}
+
+# Ignorer les IPs locales
+ignoreip = 127.0.0.1/8 ::1
+
+# =============================================================================
+# SSH JAIL
+# =============================================================================
+
+[sshd]
+enabled = {{ fail2ban_ssh_enabled | lower }}
+port = {{ fail2ban_ssh_port }}
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = {{ fail2ban_ssh_maxretry }}
+bantime = {{ fail2ban_ssh_bantime }}
+findtime = {{ fail2ban_findtime }}
+
+# =============================================================================
+# AUTRES JAILS (optionnel)
+# =============================================================================
+
+[port-scan]
+enabled = false
+filter = port-scan
+logpath = /var/log/syslog
+maxretry = 2
+bantime = 86400
+
+[apache-auth]
+enabled = false
+port = http,https
+logpath = /var/log/apache2/error.log
+
+[apache-badbots]
+enabled = false
+port = http,https
+logpath = /var/log/apache2/access.log
+bantime = 86400
+maxretry = 1
+
+[nginx-http-auth]
+enabled = false
+port = http,https
+logpath = /var/log/nginx/error.log
+
+[nginx-limit-req]
+enabled = false
+port = http,https
+logpath = /var/log/nginx/error.log
+
+# Elasticsearch protection
+[elasticsearch]
+enabled = true
+port = {{ es_port | default('9200') }}
+filter = elasticsearch
+logpath = /var/log/elasticsearch/*.log
+maxretry = 5
+bantime = 3600
+findtime = 600

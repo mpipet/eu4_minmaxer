@@ -1,0 +1,22 @@
+- name: restart sshd
+  systemd:
+    name: sshd
+    state: restarted
+  listen: "restart sshd"
+
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+  listen: "restart fail2ban"
+
+- name: restart ufw
+  systemd:
+    name: ufw
+    state: restarted
+  listen: "restart ufw"
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  listen: "reload systemd"

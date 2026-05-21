@@ -1,0 +1,143 @@
+---
+# =============================================================================
+# ROLE: DOCKER
+# Description: Install and configure Docker
+# =============================================================================
+
+# Remove old Docker versions
+- name: Remove old Docker versions
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+  tags: docker
+
+# Install prerequisites
+- name: Install Docker prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+  tags: docker
+
+# Create directory for keyrings
+- name: Create directory for apt keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  tags: docker
+
+# Download Docker GPG key
+- name: Download Docker GPG key
+  get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+  tags: docker
+
+# Add Docker repository with signed-by key
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+    update_cache: yes
+  tags: docker
+
+# Install Docker packages
+- name: Install Docker packages
+  apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+  tags: docker
+
+# Create Docker daemon config directory
+- name: Create Docker daemon config directory
+  file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags: docker
+
+# Configure Docker daemon
+- name: Configure Docker daemon
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart docker
+  tags: docker
+
+# Add users to docker group (no sudo needed)
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+  tags: docker
+
+# Ensure Docker starts on boot
+- name: Ensure Docker service is enabled and started
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+  tags: docker
+
+# Install docker-compose standalone
+- name: Download docker-compose standalone
+  get_url:
+    url: "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  tags: docker
+
+# Create docker-compose symlink
+- name: Create docker-compose symlink
+  file:
+    src: /usr/local/bin/docker-compose
+    dest: /usr/bin/docker-compose
+    state: link
+  tags: docker
+
+# Verify Docker installation
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags: docker
+
+# Display Docker version
+- name: Display Docker version
+  debug:
+    msg: "✅ Docker installed: {{ docker_version.stdout }}"
+  tags: docker
+
+# Verify docker-compose installation
+- name: Verify docker-compose installation
+  command: docker-compose --version
+  register: docker_compose_version
+  changed_when: false
+  tags: docker
+
+# Display docker-compose version
+- name: Display docker-compose version
+  debug:
+    msg: "✅ docker-compose installed: {{ docker_compose_version.stdout }}"
+  tags: docker
