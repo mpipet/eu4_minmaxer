@@ -1,0 +1,107 @@
+services:
+  es:
+    hostname: es
+    container_name: "es01"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}"
+    mem_limit: ${ES_MEM_LIMIT}
+    ulimits:
+     memlock:
+       soft: -1
+       hard: -1
+    ports:
+      - ${ES_PORT}:9200
+    volumes:
+      # Mount custom certificates
+      - ./cert/http_ca.crt:/usr/share/elasticsearch/config/certs/http_ca.crt:ro
+      - ./cert/http.p12:/usr/share/elasticsearch/config/certs/http.p12:ro
+      - ./cert/truststore.p12:/usr/share/elasticsearch/config/certs/truststore.p12:ro
+      # Data persistence
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s --cacert /usr/share/elasticsearch/config/certs/http_ca.crt -u elastic:${ES_PASSWORD} https://es:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - eu4-network
+    environment:
+      - node.name=es01
+      - cluster.name=${CLUSTER_NAME}
+      - discovery.type=single-node
+      - indices.query.bool.max_clause_count=4096
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
+
+      # Enable security with custom certificate
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.keystore.path=certs/http.p12
+      - xpack.security.http.ssl.keystore.password=${ES_KEYSTORE_PASSWORD}
+      - xpack.security.http.ssl.truststore.path=certs/truststore.p12
+      - xpack.security.http.ssl.truststore.password=${ES_KEYSTORE_PASSWORD}
+      # Certificate verification mode
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.http.ssl.client_authentication=none    
+
+
+  api:
+    image: api-local:latest
+    build: 
+      context: ./api
+      target: development
+    container_name: eu4-api
+    volumes: [
+      './api:/app',
+      './cert:/cert',
+      "/mnt/c/Program Files (x86)/Steam/steamapps/common/Europa Universalis IV:/eu4:ro",
+    ]
+    stop_signal: SIGINT
+    environment:
+      EU4_PATH: ${EU4_PATH}
+      ES_USER: ${ES_USER}
+      ES_PASSWORD: ${ES_PASSWORD}
+      ES_PORT: ${ES_PORT}
+      ES_HOST: ${ES_HOST}
+      ES_SSL_CERT: ${ES_SSL_CERT}
+      ES_SSL_KEY: ${ES_SSL_KEY}
+      DEFAULT_PAGE_SIZE: ${DEFAULT_PAGE_SIZE}
+      DEFAULT_PAGE: ${DEFAULT_PAGE}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      es:
+        condition: service_healthy
+    ports:
+      - 8000:8000
+    networks:
+      - eu4-network
+
+
+  front: 
+    image: front-local:latest
+    build: 
+      context: ./front
+      target: development
+      args:
+        API_URL: ${API_URL}
+    environment:
+        API_URL: ${API_URL}
+    container_name: eu4-front
+    user: node
+    volumes:
+      - ./front:/front
+      - /front/node_modules
+    ports:
+      - 3000:3000
+    depends_on: 
+      - api
+    networks:
+      - eu4-network
+
+
+volumes:
+  es_data:
+    driver: local
+
+networks:
+  eu4-network:
+    driver: bridge
