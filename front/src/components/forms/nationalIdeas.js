@@ -10,7 +10,7 @@ import SortControl from '../sortControl';
 export default class NationalIdeas extends React.Component {
 
   componentDidMount() {
-    this.performSearch(this.props.form.modifiers, this.props.form.tag, this.props.form.sortField, this.props.form.sortDirection);
+    this.performSearch(this.props.modifiers, this.props.form.tag, this.props.form.sortField, this.props.form.sortDirection);
   }
 
   handleModifierSelect = (modifiers) => {
@@ -20,12 +20,12 @@ export default class NationalIdeas extends React.Component {
 
   handleTagSelect = (tag) => {
     this.props.handleFormChange({ tag: tag })
-    this.performSearch(this.props.form.modifiers, tag, this.props.form.sortField, this.props.form.sortDirection);
+    this.performSearch(this.props.modifiers, tag, this.props.form.sortField, this.props.form.sortDirection);
   };
 
   handleSortChange = (sortField, sortDirection) => {
     this.props.handleFormChange({ sortField: sortField, sortDirection: sortDirection })
-    this.performSearch(this.props.form.modifiers, this.props.form.tag, sortField, sortDirection);
+    this.performSearch(this.props.modifiers, this.props.form.tag, sortField, sortDirection);
   };
 
   // Main search with select filter
@@ -75,10 +75,10 @@ export default class NationalIdeas extends React.Component {
             placeholder="Search modifiers..."
             onSelectionChange={this.handleModifierSelect}
             apiEndpoint={getApiUrl('/modifiers')}
-            value={this.props.form.modifiers}
+            value={this.props.modifiers}
           />
           <SortControl
-            fields={this.props.form.modifiers}
+            fields={this.props.modifiers}
             onSortChange={this.handleSortChange}
           />
         </div>

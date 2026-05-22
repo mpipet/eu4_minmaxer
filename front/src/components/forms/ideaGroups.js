@@ -4,7 +4,7 @@ import { getApiUrl } from '@/helpers';
 
 export default class IdeaGroups extends React.Component {
   componentDidMount() {
-    this.performSearch(this.props.form.modifiers);
+    this.performSearch(this.props.modifiers);
   }
 
   handleModifierSelect = (modifiers) => {

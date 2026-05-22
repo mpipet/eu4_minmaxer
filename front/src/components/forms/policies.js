@@ -6,7 +6,7 @@ import { getApiUrl, translate } from '@/helpers';
 export default class Policies extends React.Component {
 
 	componentDidMount() {
-		this.performSearch(this.props.form.modifiers, this.props.form.monarchPower, this.props.form.ideaGroups);
+		this.performSearch(this.props.modifiers, this.props.form.monarchPower, this.props.form.ideaGroups);
 	}
 
 	handleModifierSelect = (modifiers) => {
@@ -16,13 +16,13 @@ export default class Policies extends React.Component {
 
 	handleMonarchPowerSelect = (monarchPower) => {
 		this.props.handleFormChange({ ...this.props.form, monarchPower: monarchPower.value });
-		this.performSearch(this.props.form.modifiers, monarchPower.value, this.props.form.ideaGroups);
+		this.performSearch(this.props.modifiers, monarchPower.value, this.props.form.ideaGroups);
 	};
 
 
 	handleIdeaGroupsSelect = (ideaGroups) => {
 		this.props.handleFormChange({ ...this.props.form, ideaGroups: ideaGroups });
-		this.performSearch(this.props.form.modifiers, this.props.form.monarchPower, ideaGroups);
+		this.performSearch(this.props.modifiers, this.props.form.monarchPower, ideaGroups);
 	}
 
 	// Main search with select filter
