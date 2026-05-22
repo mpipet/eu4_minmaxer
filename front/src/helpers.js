@@ -6,7 +6,7 @@ export const getApiBaseUrl = () => {
     return `${window.location.protocol}//${API_URL_INTERNAL}`;
   }
 
-  return  `http://localhost:8000`;
+  return `http://localhost:8000`;
 };
 
 export const getWikiLink = (page) => {
@@ -23,7 +23,7 @@ export const getApiUrl = (endpoint) => {
 
 export const translate = (key) => {
   if (!key in localizations) {
-    console.log("Warning translation absent", key)
+    console.warn("Warning translation absent", key)
   }
   return key in localizations ? localizations[key] : "***" + key + "***"
 }
@@ -36,7 +36,7 @@ export const formatModifierValue = (name, value) => {
   if (percentageModifiers.includes(translate(name))) {
 
     if (translate(name) == "Liberty Desire in Subjects") {
-      return `${value*-1}%`;
+      return `${value * -1}%`;
     }
     return `${value > 0 ? '+' : ''}${value * 100}%`;
   }

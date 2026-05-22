@@ -3,20 +3,20 @@ import MultiselectAutocomplete from '@/components/multiSelectAutocomplete'
 import { getApiUrl } from '@/helpers';
 
 export default class GreatProjects extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			selectedModifiers: [],
-			searchResults: [],
-		};
-	}
+	// constructor(props) {
+	// 	super(props);
+	// 	this.state = {
+	// 		selectedModifiers: [],
+	// 		searchResults: [],
+	// 	};
+	// }
 
 	componentDidMount() {
-		this.performSearch([]);
+		this.performSearch(this.props.form.modifiers);
 	}
 
 	handleModifierSelect = (modifiers) => {
-		this.setState({ selectedModifiers: modifiers });
+		this.props.handleModifiersChange(modifiers)
 		this.performSearch(modifiers);
 	};
 
@@ -30,11 +30,11 @@ export default class GreatProjects extends React.Component {
 
 
 		fetch(getApiUrl(`/great_projects?${query.join('&')}`), {
-	        method: 'GET',
-		        headers: {
-		          'Content-Type': 'application/json'
-		        }
-	        })
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
 			.then(response => response.json())
 			.then(data => {
 				this.props.setSearchResults(data);
@@ -52,6 +52,7 @@ export default class GreatProjects extends React.Component {
 					placeholder="Search modifiers..."
 					onSelectionChange={this.handleModifierSelect}
 					apiEndpoint={getApiUrl('/modifiers')}
+					value={this.props.modifiers}
 				/>
 			</>
 		)

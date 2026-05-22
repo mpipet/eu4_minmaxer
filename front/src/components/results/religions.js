@@ -81,7 +81,7 @@ export default class Religions extends React.Component {
 
     render() {
         const { religion } = this.props;
-        console.log(religion)
+
         return (
             <div className="national-ideas-result">
                 <ReligionsResultHeader religion={religion} />

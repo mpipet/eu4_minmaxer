@@ -45,7 +45,28 @@ export default class SearchFormSelector extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      activeFormId: 'national_ideas'
+      activeFormId: 'national_ideas',
+      forms: {
+        national_ideas: {
+          modifiers: [],
+          tag: {},
+          sortField: null,
+          sortDirection: 'desc'
+        },
+        idea_groups: {
+          modifiers: [],
+        },
+        policies: {
+          monarchPower: "",
+          ideaGroups: [],
+          modifiers: [],
+        },
+        great_projects: {
+          modifiers: [],
+        }
+
+      },
+      modifiers: [],
     };
   }
 
@@ -59,6 +80,25 @@ export default class SearchFormSelector extends React.Component {
 
   getActiveForm = () => {
     return SEARCH_FORMS.find(form => form.id === this.state.activeFormId);
+  };
+
+
+  handleModifiersChange = (modifiers) => {
+    const oldForm = this.state.forms
+    const newForms = oldForm
+
+    newForms[this.state.activeFormId]["modifiers"] = modifiers
+
+
+    this.setState({ modifiers: modifiers, forms: newForms });
+  };
+
+  handleFormChange = (form) => {
+    const oldForm = this.state.forms
+    const newForms = oldForm
+
+    newForms[this.state.activeFormId] = Object.assign(oldForm[this.state.activeFormId], form);
+    this.setState({ forms: newForms });
   };
 
   render() {
@@ -91,7 +131,14 @@ export default class SearchFormSelector extends React.Component {
           </div>
 
           {ActiveFormComponent ? (
-            <ActiveFormComponent setLoading={this.props.setLoading} setSearchResults={this.props.setSearchResults} />
+            <ActiveFormComponent
+              setLoading={this.props.setLoading}
+              setSearchResults={this.props.setSearchResults}
+              form={this.state.forms[this.state.activeFormId]}
+              modifiers={this.state.modifiers}
+              handleFormChange={this.handleFormChange}
+              handleModifiersChange={this.handleModifiersChange}
+            />
           ) : (
             <div className="form-coming-soon">
               Coming soon...

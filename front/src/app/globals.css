@@ -1422,3 +1422,516 @@ input.input::placeholder {
     height: 32px;
   }
 }
+
+/* ============================================
+   MULTISELECT AUTOCOMPLETE (react-select)
+   ============================================ */
+
+/* Container principal */
+.multiselect-container {
+  font-family: 'Crimson Text', serif;
+  position: relative;
+}
+
+.multiselect__control {
+  min-height: 44px !important;
+  background: var(--bg-input) !important;
+  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  cursor: text !important;
+  transition: all 0.15s;
+}
+
+.multiselect__control:hover {
+  border-color: rgba(212, 175, 55, 0.5) !important;
+}
+
+.multiselect__control--is-focused {
+  border-color: var(--border-gold) !important;
+  box-shadow: 0 0 0 2px var(--gold-glow) !important;
+}
+
+/* Zone des valeurs - Centrage vertical */
+.multiselect__value-container {
+  padding: 4px 8px !important;
+  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center !important;
+  /* ← Pour centrer verticalement */
+  min-height: 52px !important;
+  /* ← Hauteur interne minimale */
+}
+
+/* Input aligné verticalement */
+.multiselect__input-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--text-primary) !important;
+}
+
+.multiselect__input {
+  color: var(--text-primary) !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 15px !important;
+}
+
+.multiselect__placeholder {
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+  font-size: 15px !important;
+  margin: 0 !important;
+}
+
+/* Tags sélectionnés (multi-value) */
+.multiselect__multi-value {
+  background: var(--bg-item) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  margin: 2px !important;
+  transition: all 0.15s;
+}
+
+.multiselect__multi-value:hover {
+  background: var(--bg-item-hover) !important;
+  border-color: var(--border-gold) !important;
+}
+
+.multiselect__multi-value__label {
+  padding: 2px 4px !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  font-family: 'Crimson Text', serif !important;
+}
+
+.multiselect-value-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Bouton de suppression des tags */
+.multiselect__multi-value__remove {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border-radius: 0 4px 4px 0 !important;
+  cursor: pointer !important;
+  padding: 0 6px !important;
+  transition: all 0.15s;
+}
+
+.multiselect__multi-value__remove:hover {
+  background: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+
+/* Dropdown menu */
+.multiselect__menu {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  margin-top: 4px !important;
+  z-index: 1000 !important;
+}
+
+.multiselect__menu-list {
+  padding: 4px !important;
+  max-height: 300px !important;
+}
+
+/* Options dans le dropdown */
+.multiselect__option {
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+  border-radius: 4px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.15s;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 14px !important;
+  color: var(--text-primary) !important;
+}
+
+.multiselect__option:last-child {
+  margin-bottom: 0 !important;
+}
+
+.multiselect__option--is-focused {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.multiselect__option--is-selected {
+  background: rgba(212, 175, 55, 0.1) !important;
+  color: var(--text-gold) !important;
+}
+
+.multiselect__option:active {
+  background: rgba(212, 175, 55, 0.15) !important;
+}
+
+.multiselect-option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Loading indicator */
+.multiselect__loading-indicator {
+  color: var(--text-gold) !important;
+}
+
+/* Clear indicator (bouton ×) */
+.multiselect__clear-indicator {
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 0 8px !important;
+  transition: all 0.15s;
+}
+
+.multiselect__clear-indicator:hover {
+  color: #fca5a5 !important;
+}
+
+/* Dropdown indicator (flèche) */
+.multiselect__indicator-separator {
+  background-color: var(--border) !important;
+}
+
+.multiselect__dropdown-indicator {
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  transition: all 0.15s;
+}
+
+.multiselect__dropdown-indicator:hover {
+  color: var(--text-gold) !important;
+}
+
+/* Message "No options" */
+.multiselect__menu-notice {
+  padding: 12px !important;
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+  text-align: center !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 14px !important;
+}
+
+/* Images dans les tags et options */
+.multiselect-value-content .select-icon-container img,
+.multiselect-option-content .select-icon-container img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .multiselect__control {
+    min-height: 52px;
+  }
+
+  .multiselect__multi-value__label {
+    padding: 4px 6px !important;
+    font-size: 13px !important;
+  }
+
+  .multiselect-value-content .select-icon-container img,
+  .multiselect-option-content .select-icon-container img {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ============================================
+   AUTOCOMPLETE (react-select single)
+   ============================================ */
+
+/* Container principal */
+.autocomplete-container {
+  font-family: 'Crimson Text', serif;
+  position: relative;
+}
+
+/* Control */
+.autocomplete__control {
+  min-height: 44px !important;
+  background: var(--bg-input) !important;
+  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  cursor: text !important;
+  transition: all 0.15s;
+}
+
+.autocomplete__control:hover {
+  border-color: rgba(212, 175, 55, 0.5) !important;
+}
+
+.autocomplete__control--is-focused {
+  border-color: var(--border-gold) !important;
+  box-shadow: 0 0 0 2px var(--gold-glow) !important;
+}
+
+/* Zone de la valeur */
+.autocomplete__value-container {
+  padding: 4px 8px !important;
+  display: flex;
+  align-items: center !important;
+  min-height: 36px !important;
+}
+
+/* Valeur sélectionnée */
+.autocomplete__single-value {
+  color: var(--text-primary) !important;
+  font-size: 15px !important;
+  margin: 0 !important;
+}
+
+.autocomplete-selected-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.autocomplete-selected-content .select-icon-container img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* Input de recherche */
+.autocomplete__input-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--text-primary) !important;
+}
+
+.autocomplete__input {
+  color: var(--text-primary) !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 15px !important;
+}
+
+.autocomplete__placeholder {
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+  font-size: 15px !important;
+  margin: 0 !important;
+}
+
+/* Bouton clear (×) */
+.autocomplete__clear-indicator {
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 0 8px !important;
+  transition: all 0.15s;
+}
+
+.autocomplete__clear-indicator:hover {
+  color: #fca5a5 !important;
+}
+
+/* Séparateur */
+.autocomplete__indicator-separator {
+  background-color: var(--border) !important;
+}
+
+/* Dropdown indicator (flèche) */
+.autocomplete__dropdown-indicator {
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  transition: all 0.15s;
+}
+
+.autocomplete__dropdown-indicator:hover {
+  color: var(--text-gold) !important;
+}
+
+/* Dropdown menu */
+.autocomplete__menu {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  margin-top: 4px !important;
+  z-index: 1000 !important;
+}
+
+.autocomplete__menu-list {
+  padding: 4px !important;
+  max-height: 300px !important;
+}
+
+/* Options dans le dropdown */
+.autocomplete__option {
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+  border-radius: 4px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.15s;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 14px !important;
+  color: var(--text-primary) !important;
+}
+
+.autocomplete__option:last-child {
+  margin-bottom: 0 !important;
+}
+
+.autocomplete__option--is-focused {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.autocomplete__option--is-selected {
+  background: rgba(212, 175, 55, 0.1) !important;
+  color: var(--text-gold) !important;
+}
+
+.autocomplete__option:active {
+  background: rgba(212, 175, 55, 0.15) !important;
+}
+
+.autocomplete-option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.autocomplete-option-content .select-icon-container img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* Loading indicator */
+.autocomplete__loading-indicator {
+  color: var(--text-gold) !important;
+}
+
+/* Message "No options" */
+.autocomplete__menu-notice {
+  padding: 12px !important;
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+  text-align: center !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 14px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .autocomplete__control {
+    min-height: 38px !important;
+  }
+
+  .autocomplete-selected-content .select-icon-container img,
+  .autocomplete-option-content .select-icon-container img {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ============================================
+   SIMPLE SELECT
+   ============================================ */
+
+.select-container {
+  font-family: 'Crimson Text', serif !important;
+}
+
+.select__control {
+  min-height: 44px !important;
+  background: var(--bg-input) !important;
+  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
+
+.select__control:hover {
+  border-color: rgba(212, 175, 55, 0.5) !important;
+}
+
+.select__control--is-focused {
+  border-color: var(--border-gold) !important;
+  box-shadow: 0 0 0 2px var(--gold-glow) !important;
+}
+
+.select__value-container {
+  padding: 4px 8px !important;
+  min-height: 36px !important;
+}
+
+.select__single-value {
+  color: var(--text-primary) !important;
+  font-size: 15px !important;
+  margin: 0 !important;
+}
+
+.select__placeholder {
+  color: var(--text-muted) !important;
+  font-style: italic !important;
+  font-size: 15px !important;
+}
+
+.select__indicator-separator {
+  background-color: var(--border) !important;
+}
+
+.select__dropdown-indicator {
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  transition: all 0.15s !important;
+}
+
+.select__dropdown-indicator:hover {
+  color: var(--text-gold) !important;
+}
+
+.select__menu {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  margin-top: 4px !important;
+  z-index: 1000 !important;
+}
+
+.select__menu-list {
+  padding: 4px !important;
+  max-height: 300px !important;
+}
+
+.select__option {
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+  border-radius: 4px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.15s !important;
+  font-size: 14px !important;
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+
+.select__option:last-child {
+  margin-bottom: 0 !important;
+}
+
+.select__option--is-focused {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.select__option--is-selected {
+  background: rgba(212, 175, 55, 0.1) !important;
+  color: var(--text-gold) !important;
+}
+
+.select__option:active {
+  background: rgba(212, 175, 55, 0.15) !important;
+}

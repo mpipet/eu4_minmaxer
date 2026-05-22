@@ -5,41 +5,32 @@ import Autocomplete from '../autocomplete';
 import { getApiUrl } from '@/helpers';
 import SortControl from '../sortControl';
 
+
+
 export default class NationalIdeas extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      fields: [],
-      selectedTag: {},
-      searchResults: [],
-      sortField: null,
-      sortDirection: 'desc'
-    };
-  }
 
   componentDidMount() {
-    this.performSearch([], {});
+    this.performSearch(this.props.form.modifiers, this.props.form.tag, this.props.form.sortField, this.props.form.sortDirection);
   }
 
   handleModifierSelect = (modifiers) => {
-    this.setState({ fields: modifiers });
-    this.performSearch(modifiers, this.state.selectedTag, this.state.sortField, this.state.sortDirection);
+    this.props.handleModifiersChange(modifiers)
+    this.performSearch(modifiers, this.props.form.tag, this.props.form.sortField, this.props.form.sortDirection);
   };
 
   handleTagSelect = (tag) => {
-    this.setState({ selectedTag: tag });
-    this.performSearch(this.state.fields, tag, this.state.sortField, this.state.sortDirection);
+    this.props.handleFormChange({ tag: tag })
+    this.performSearch(this.props.form.modifiers, tag, this.props.form.sortField, this.props.form.sortDirection);
   };
 
   handleSortChange = (sortField, sortDirection) => {
-    this.setState({ sortField: sortField, sortDirection: sortDirection })
-    this.performSearch(this.state.fields, this.state.tag, sortField, sortDirection);
+    this.props.handleFormChange({ sortField: sortField, sortDirection: sortDirection })
+    this.performSearch(this.props.form.modifiers, this.props.form.tag, sortField, sortDirection);
   };
 
   // Main search with select filter
   performSearch = (modifiers, tag, sortField, sortDirection) => {
     this.props.setLoading(true);
-
     var query = modifiers.map((modifier) => {
       return `modifiers_filter=${modifier.name}`;
     })
@@ -53,11 +44,11 @@ export default class NationalIdeas extends React.Component {
     }
 
     fetch(getApiUrl(`/national_ideas?${query.join('&')}`), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
       .then(response => response.json())
       .then(data => {
         this.props.setSearchResults(data);
@@ -69,12 +60,14 @@ export default class NationalIdeas extends React.Component {
   };
 
   render() {
+
     return (
       <>
         <Autocomplete
           placeholder="Search tag..."
           apiEndpoint={getApiUrl('/tags')}
           onSelectionChange={this.handleTagSelect}
+          initialValue={this.props.form.tag}
         />
 
         <div className="grid grid-cols-2">
@@ -82,9 +75,10 @@ export default class NationalIdeas extends React.Component {
             placeholder="Search modifiers..."
             onSelectionChange={this.handleModifierSelect}
             apiEndpoint={getApiUrl('/modifiers')}
+            value={this.props.form.modifiers}
           />
           <SortControl
-            fields={this.state.fields}
+            fields={this.props.form.modifiers}
             onSortChange={this.handleSortChange}
           />
         </div>

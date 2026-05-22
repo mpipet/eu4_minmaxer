@@ -19,14 +19,14 @@ openssl pkcs12 -export \
   -inkey http_ca.key \
   -out http.p12 \
   -name es01 \
-  -passout pass:eorgzergjgzjogio
+  -passout pass:changme
 
 keytool -import \
   -alias ca \
   -file http_ca.crt \
   -keystore truststore.p12 \
   -storetype PKCS12 \
-  -storepass eorgzergjgzjogio \
+  -storepass changme \
   -noprompt
 
 chmod 644 http_ca.crt http.p12 truststore.p12

@@ -3,51 +3,44 @@ import MultiselectAutocomplete from '@/components/multiSelectAutocomplete'
 import { getApiUrl } from '@/helpers';
 
 export default class Religions extends React.Component {
-  constructor(props) {
-	super(props);
-	this.state = {
-	  selectedModifiers: [],
-	  searchResults: [],
+	componentDidMount() {
+		this.performSearch(this.props.modifiers);
+	}
+
+	handleModifierSelect = (modifiers) => {
+		this.props.handleModifiersChange(modifiers)
+		this.performSearch(modifiers);
 	};
-  }
 
-  componentDidMount() {
-	this.performSearch([]);
-  }
+	// Main search with select filter
+	performSearch = (modifiers) => {
+		this.props.setLoading(true);
 
-  handleModifierSelect = (modifiers) => {
-	this.setState({ selectedModifiers: modifiers });
-	this.performSearch(modifiers);
-  };
+		var query = modifiers.map((modifier) => {
+			return `modifiers_filter=${modifier.name}`;
+		})
 
-  // Main search with select filter
-  performSearch = (modifiers) => {
-	this.props.setLoading(true);
+		fetch(getApiUrl(`/religions?${query.join('&')}`))
+			.then(response => response.json())
+			.then(data => {
+				this.props.setSearchResults(data);
+			})
+			.catch(error => {
+				console.error('Search error:', error);
+				this.props.setLoading(false);
+			});
+	};
 
-	var query = modifiers.map((modifier) => {
-	  return `modifiers_filter=${modifier.name}`;
-	})
-
-	fetch(getApiUrl(`/religions?${query.join('&')}`))
-	  .then(response => response.json())
-	  .then(data => {
-		this.props.setSearchResults(data);
-	  })
-	  .catch(error => {
-		console.error('Search error:', error);
-		this.props.setLoading(false);
-	  });
-  };
-
-  render() {
-	return (
-	  <>
-		<MultiselectAutocomplete
-		  placeholder="Search modifiers..."
-		  onSelectionChange={this.handleModifierSelect}
-		  apiEndpoint={getApiUrl('/modifiers')}
-		/>
-	  </>
-	)
-  }
+	render() {
+		return (
+			<>
+				<MultiselectAutocomplete
+					placeholder="Search modifiers..."
+					onSelectionChange={this.handleModifierSelect}
+					apiEndpoint={getApiUrl('/modifiers')}
+					value={this.props.modifiers}
+				/>
+			</>
+		)
+	}
 }

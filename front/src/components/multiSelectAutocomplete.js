@@ -1,179 +1,159 @@
 'use client';
-import React from "react";
-import { getImageUrl } from '@/helpers';
-import { SelectDropdown } from '@/components/select'
-import { translate } from "@/helpers";
+import { useState, useEffect } from 'react';
+import Select, { components } from 'react-select';
+import { getImageUrl, translate } from '@/helpers';
 
-export default class MultiselectAutocomplete extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      text: '',
-      suggestions: [],
-      selectedItems: [], // Array of selected items
-      showSuggestions: false
-    };
-    this.wrapperRef = React.createRef();
-    this.inputRef = React.createRef();
-  }
+const MultiValueLabel = (props) => {
+  const { data } = props;
 
-  componentDidMount() {
-    document.addEventListener('mousedown', this.handleClickOutside);
-  }
+  return (
+    <components.MultiValueLabel {...props}>
+      <div className="multiselect-value-content">
+        <div className="select-icon-container">
+          <img
+            src={getImageUrl(data.name)}
+            alt={data.name}
+          />
+        </div>
+        <span className="select-text">{translate(data.name)}</span>
+      </div>
+    </components.MultiValueLabel>
+  );
+};
 
-  componentWillUnmount() {
-    document.removeEventListener('mousedown', this.handleClickOutside);
-  }
+// Composant personnalisé pour les options du dropdown
+const Option = (props) => {
+  const { data } = props;
 
-  handleClickOutside = (event) => {
-    if (this.wrapperRef.current && !this.wrapperRef.current.contains(event.target)) {
-      this.setState({ showSuggestions: false });
+  return (
+    <components.Option {...props}>
+      <div className="multiselect-option-content">
+        <div className="select-icon-container">
+          <img
+            src={getImageUrl(data.name)}
+            alt={data.name}
+          />
+        </div>
+        <span>{translate(data.name)}</span>
+      </div>
+    </components.Option>
+  );
+};
+
+const MultiselectAutocomplete = ({
+  apiEndpoint,
+  placeholder,
+  onSelectionChange,
+  initialSelectedItems = [],
+  value = null,
+}) => {
+  const [selectedItems, setSelectedItems] = useState(initialSelectedItems);
+  const [options, setOptions] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Initialiser avec les valeurs fournies
+  useEffect(() => {
+    if (initialSelectedItems.length > 0 && selectedItems.length === 0) {
+      setSelectedItems(initialSelectedItems);
     }
-  };
+  }, [initialSelectedItems]);
 
-  fetchSuggestions(text) {
-    if (!text.trim()) {
-      this.setState({ suggestions: [], showSuggestions: false });
+  // Support du mode contrôlé
+  useEffect(() => {
+    if (value !== null) {
+      setSelectedItems(value);
+    }
+  }, [value]);
+
+  // Fetch suggestions quand l'input change
+  useEffect(() => {
+    if (!inputValue.trim()) {
+      setOptions([]);
       return;
     }
 
-    fetch(this.props.apiEndpoint + "?query=" + text)
+    setIsLoading(true);
+
+    fetch(apiEndpoint + "?query=" + inputValue)
       .then((response) => response.json())
       .then((data) => {
-        // Filter out already selected items
+        // Filtrer les items déjà sélectionnés
         const filtered = data.results.filter(
-          item => !this.state.selectedItems.some(selected => selected.name === item.name)
+          item => !selectedItems.some(selected => selected.name === item.name)
         );
 
-        this.setState({
-          suggestions: filtered,
-          showSuggestions: true
-        });
+        // Formater pour react-select
+        const formattedOptions = filtered.map((item) => ({
+          ...item,
+          value: item.name,
+          label: translate(item.name),
+        }));
+
+        setOptions(formattedOptions);
+        setIsLoading(false);
       })
       .catch(error => {
         console.error('Search error:', error);
+        setIsLoading(false);
       });
-  }
+  }, [inputValue, selectedItems, apiEndpoint]);
 
-  handleSelect = (item) => {
-    const newSelectedItems = [...this.state.selectedItems, item];
+  // Handler de sélection - Renvoie TOUT le tableau
+  const handleChange = (selected) => {
+    const newSelectedItems = selected || [];
 
-    this.setState({
-      text: '',
-      suggestions: [],
-      selectedItems: newSelectedItems,
-      showSuggestions: false
-    });
-
-    // Focus back on input
-    if (this.inputRef.current) {
-      this.inputRef.current.focus();
+    // Seulement mettre à jour l'état interne si non contrôlé
+    if (value === null) {
+      setSelectedItems(newSelectedItems);
     }
 
-    if (this.props.onSelectionChange) {
-      this.props.onSelectionChange(newSelectedItems);
+    setInputValue('');
+    setOptions([]);
+
+    if (onSelectionChange) {
+      onSelectionChange(newSelectedItems);
     }
   };
 
-  handleRemove = (itemToRemove) => {
-    const newSelectedItems = this.state.selectedItems.filter(
-      item => item.name !== itemToRemove.name
-    );
-
-    this.setState({ selectedItems: newSelectedItems });
-
-    if (this.props.onSelectionChange) {
-      this.props.onSelectionChange(newSelectedItems);
+  // Handler de saisie
+  const handleInputChange = (value, { action }) => {
+    if (action === 'input-change') {
+      setInputValue(value);
     }
   };
 
-  handleInputChange = (e) => {
-    const text = e.target.value;
-    this.setState({ text: text });
-    this.fetchSuggestions(text);
-  };
+  // Utiliser value si fourni, sinon selectedItems
+  const currentValue = value !== null ? value : selectedItems;
 
-  handleFocus = () => {
-    if (this.state.text.trim() && this.state.suggestions.length > 0) {
-      this.setState({ showSuggestions: true });
-    }
-  };
-
-  handleKeyDown = (e) => {
-    // Backspace on empty input removes last tag
-    if (e.key === 'Backspace' && !this.state.text && this.state.selectedItems.length > 0) {
-      const newSelectedItems = this.state.selectedItems.slice(0, -1);
-      this.setState({ selectedItems: newSelectedItems });
-
-      if (this.props.onSelectionChange) {
-        this.props.onSelectionChange(newSelectedItems);
+  return (
+    <Select
+      isMulti
+      value={currentValue}
+      options={options}
+      onChange={handleChange}
+      onInputChange={handleInputChange}
+      inputValue={inputValue}
+      components={{
+        MultiValueLabel,
+        Option,
+        DropdownIndicator: null,
+        IndicatorSeparator: null,
+      }}
+      placeholder={placeholder}
+      isLoading={isLoading}
+      noOptionsMessage={() =>
+        inputValue.trim()
+          ? 'No results found'
+          : 'Type to search...'
       }
-    }
-  };
+      className="multiselect-container"
+      classNamePrefix="multiselect"
+      blurInputOnSelect={false}
+      closeMenuOnSelect={false}
+      backspaceRemovesValue={true}
+    />
+  );
+};
 
-  render() {
-    const { placeholder } = this.props;
-    const { text, suggestions, selectedItems, showSuggestions } = this.state;
-    const options = suggestions.map((suggestion) => {
-      suggestion["imageUrl"] = suggestion.name
-      suggestion["value"] = suggestion.name
-      suggestion["label"] = translate(suggestion.name)
-      return suggestion
-    })
-
-    return (
-      <div className="select-container" ref={this.wrapperRef}>
-        {/* Multiselect display area */}
-        <div className="select-display" onClick={() => this.inputRef.current?.focus()}>
-          {/* Selected tags */}
-          {selectedItems.map((item) => (
-            <div key={item.name} className="multiselect-tag">
-              {/* Image */}
-              <div className="select-icon-container">
-                <img
-                  src={getImageUrl(item.name)}
-                  alt={item.name}
-                />
-              </div >
-              <span className="select-text">{translate(item.name)}</span>
-
-              {/* Remove button */}
-              <button
-                className="multiselect-tag-remove"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  this.handleRemove(item);
-                }}
-                type="button"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-
-          {/* Input field */}
-          <input
-            ref={this.inputRef}
-            type="text"
-            value={text}
-            className="select-input"
-            placeholder={selectedItems.length === 0 ? placeholder : ''}
-            onFocus={this.handleFocus}
-            onChange={this.handleInputChange}
-            onKeyDown={this.handleKeyDown}
-          />
-
-        </div>
-
-        {/* Suggestions dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <SelectDropdown
-            placeholder={placeholder}
-            handleSelect={this.handleSelect}
-            options={options}
-          />
-        )}
-      </div>
-    );
-  }
-}
+export default MultiselectAutocomplete;

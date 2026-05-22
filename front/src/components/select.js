@@ -1,141 +1,108 @@
 'use client';
-import React from "react";
+import { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
 import { getImageUrl } from '@/helpers';
 
-export function SelectDropdown({ placeholder = "", handleSelect = () => { }, options = [], selectedOptions = [] }) {
+const SimpleSelect = ({
+    options = [],
+    placeholder = "",
+    onChange,
+    value,
+    defaultValue,
+}) => {
+    const itemsCache = useRef(new Map());
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Normaliser un item (retirer champs qui changent)
+    const getCachedItem = (item) => {
+        if (!item) return null;
+
+        const key = item.value;
+
+        if (itemsCache.current.has(key)) {
+            return itemsCache.current.get(key);
+        }
+
+        // Retirer les champs qui peuvent changer
+        const { score, ...normalized } = item;
+        itemsCache.current.set(key, normalized);
+        return normalized;
+    };
+
+    // Normaliser toutes les options
+    const normalizedOptions = options.map(getCachedItem);
+
+    // Trouver la valeur initiale
+    const getInitialValue = () => {
+        const initialValue = value || defaultValue;
+        if (!initialValue) return null;
+
+        const found = normalizedOptions.find(opt => opt.value === initialValue);
+        return found || null;
+    };
+
+    const [selected, setSelected] = useState(() => getInitialValue());
+
+    // Mode contrôlé : mettre à jour quand value change
+    useEffect(() => {
+        if (value !== undefined) {
+            const found = normalizedOptions.find(opt => opt.value === value);
+            setSelected(found || null);
+        }
+    }, [value]);
+
+    const handleChange = (option) => {
+        const cached = getCachedItem(option);
+
+        // Mode non contrôlé : mettre à jour l'état interne
+        if (value === undefined) {
+            setSelected(cached);
+        }
+
+        if (onChange) {
+            onChange(cached);
+        }
+    };
+
+    // Ne pas render avant hydration
+    if (!isMounted) {
+        return null;
+    }
+
+    const currentValue = value !== undefined
+        ? normalizedOptions.find(opt => opt.value === value) || null
+        : selected;
+
     return (
-        <ul className="select-dropdown">
-            {/* None option if placeholder exists */}
-            {placeholder && (
-                <li
-                    className="select-option"
-                    onMouseDown={() => handleSelect(null)}
-                >
-                    <span className="select-option-placeholder">{placeholder}</span>
-                </li>
-            )}
-            {/* Options */}
-            {options
-                .filter(option => !selectedOptions.some(sel => sel.value === option.value))
-                .map((option) => (
-                    <li
-                        key={option.value}
-                        className={"select-option"}
-                        onMouseDown={() => handleSelect(option)}
-                    >
-                        {/* Image if present */}
-                        {option.imageUrl && (
-                            <img
-                                src={getImageUrl(option.imageUrl)}
-                                alt={option.label}
-                                className="select-option-image"
-                            />
-                        )}
-                        <span>{option.label}</span>
-                    </li>
-                ))}
-        </ul>
-    );
-}
-
-
-export default class Select extends React.Component {
-    constructor(props) {
-        super(props);
-
-        // Find initial selected option
-        const initialValue = props.value || props.defaultValue;
-        const initialOption = initialValue
-            ? props.options.find(opt => opt.value === initialValue)
-            : null;
-
-        this.state = {
-            selectedOption: initialOption,
-            isOpen: false
-        };
-
-        this.wrapperRef = React.createRef();
-    }
-
-    componentDidMount() {
-        document.addEventListener('mousedown', this.handleClickOutside);
-    }
-
-    componentWillUnmount() {
-        document.removeEventListener('mousedown', this.handleClickOutside);
-    }
-
-    componentDidUpdate(prevProps) {
-        // Handle controlled component updates
-        if (this.props.value !== prevProps.value) {
-            const newOption = this.props.options.find(opt => opt.value === this.props.value);
-            this.setState({ selectedOption: newOption || null });
-        }
-    }
-
-    handleClickOutside = (event) => {
-        if (this.wrapperRef.current && !this.wrapperRef.current.contains(event.target)) {
-            this.setState({ isOpen: false });
-        }
-    };
-
-    toggleDropdown = () => {
-        this.setState(prev => ({ isOpen: !prev.isOpen }));
-    };
-
-    handleSelect = (option) => {
-        this.setState({
-            selectedOption: option,
-            isOpen: false
-        });
-
-        if (this.props.onChange) {
-            this.props.onChange(option);
-        }
-    };
-
-    render() {
-        const { options, placeholder } = this.props;
-        const { selectedOption, isOpen } = this.state;
-
-        return (
-            <div className="select-container" ref={this.wrapperRef}>
-                {/* Selected value display */}
-                <div
-                    className="select-display"
-                    onClick={this.toggleDropdown}
-                >
-                    {/* Image if present */}
-                    {selectedOption?.imageUrl && (
-                        <div className="select-icon-container">
-                            <img
-                                src={getImageUrl(selectedOption.imageUrl)}
-                                alt={selectedOption.label}
-                            />
-                        </div>
+        <Select
+            instanceId="simple-select-stable"
+            value={currentValue}
+            options={normalizedOptions}
+            onChange={handleChange}
+            getOptionValue={(opt) => opt.value}
+            getOptionLabel={(opt) => opt.label}
+            isClearable={false}
+            placeholder={placeholder}
+            formatOptionLabel={(opt) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {opt.imageUrl && (
+                        <img
+                            src={getImageUrl(opt.imageUrl)}
+                            alt={opt.label}
+                            style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+                        />
                     )}
-
-                    {/* Selected text or placeholder */}
-                    <span className={`select-text ${!selectedOption ? 'select-placeholder' : ''}`}>
-                        {selectedOption ? selectedOption.label : placeholder}
-                    </span>
-
-                    {/* Dropdown arrow */}
-                    <span className={`select-arrow ${isOpen ? 'select-arrow-open' : ''}`}>
-                        ▼
-                    </span>
+                    <span>{opt.label}</span>
                 </div>
+            )}
+            className="select-container"
+            classNamePrefix="select"
+        />
+    );
+};
 
-                {/* Dropdown list */}
-                {isOpen &&
-                    <SelectDropdown
-                        placeholder={placeholder}
-                        handleSelect={this.handleSelect}
-                        options={options}
-                        selectedOptions={selectedOption !== null ? [selectedOption] : []}
-                    />
-                }
-            </div>
-        );
-    }
-}
+export default SimpleSelect;

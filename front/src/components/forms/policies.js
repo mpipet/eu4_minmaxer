@@ -4,34 +4,25 @@ import Select from '@/components/select'
 import { getApiUrl, translate } from '@/helpers';
 
 export default class Policies extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			selectedModifiers: [],
-			monarchPower: "",
-			ideaGroups: [],
-			searchResults: [],
-		};
-	}
 
 	componentDidMount() {
-		this.performSearch([], "", []);
+		this.performSearch(this.props.form.modifiers, this.props.form.monarchPower, this.props.form.ideaGroups);
 	}
 
 	handleModifierSelect = (modifiers) => {
-		this.setState({ selectedModifiers: modifiers });
-		this.performSearch(modifiers, this.state.monarchPower, this.state.ideaGroups);
+		this.props.handleModifiersChange(modifiers);
+		this.performSearch(modifiers, this.props.form.monarchPower, this.props.form.ideaGroups);
 	};
 
 	handleMonarchPowerSelect = (monarchPower) => {
-		this.setState({ monarchPower: monarchPower.value });
-		this.performSearch(this.state.selectedModifiers, monarchPower.value, this.state.ideaGroups);
+		this.props.handleFormChange({ ...this.props.form, monarchPower: monarchPower.value });
+		this.performSearch(this.props.form.modifiers, monarchPower.value, this.props.form.ideaGroups);
 	};
 
 
 	handleIdeaGroupsSelect = (ideaGroups) => {
-		this.setState({ ideaGroups: ideaGroups });
-		this.performSearch(this.state.selectedModifiers, this.state.monarchPower, ideaGroups);
+		this.props.handleFormChange({ ...this.props.form, ideaGroups: ideaGroups });
+		this.performSearch(this.props.form.modifiers, this.props.form.monarchPower, ideaGroups);
 	}
 
 	// Main search with select filter
@@ -73,18 +64,20 @@ export default class Policies extends React.Component {
 					options={optionsWithImages}
 					placeholder="Select monarch group..."
 					onChange={this.handleMonarchPowerSelect}
+					value={this.props.form.monarchPower}
 				/>
 				<MultiselectAutocomplete
 					placeholder="Search idea groups..."
 					onSelectionChange={this.handleIdeaGroupsSelect}
 					apiEndpoint={getApiUrl('/idea_groups')}
+					value={this.props.form.ideaGroups}
 				/>
 				<MultiselectAutocomplete
 					placeholder="Search modifiers..."
 					onSelectionChange={this.handleModifierSelect}
 					apiEndpoint={getApiUrl('/modifiers')}
+					value={this.props.modifiers}
 				/>
-
 			</>
 		)
 	}
