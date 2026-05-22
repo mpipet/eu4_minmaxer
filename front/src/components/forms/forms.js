@@ -63,6 +63,9 @@ export default class SearchFormSelector extends React.Component {
         },
         great_projects: {
           modifiers: [],
+        },
+        religions: {
+          modifiers: [],
         }
 
       },
