@@ -3,14 +3,6 @@ import MultiselectAutocomplete from '@/components/multiSelectAutocomplete'
 import { getApiUrl } from '@/helpers';
 
 export default class GreatProjects extends React.Component {
-	// constructor(props) {
-	// 	super(props);
-	// 	this.state = {
-	// 		selectedModifiers: [],
-	// 		searchResults: [],
-	// 	};
-	// }
-
 	componentDidMount() {
 		this.performSearch(this.props.modifiers);
 	}

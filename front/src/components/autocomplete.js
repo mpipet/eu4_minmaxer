@@ -39,7 +39,7 @@ const Autocomplete = ({
     if (isMounted && initialValue) {
       const cached = getCachedItem(initialValue);
       setSelected(cached);
-      setOptions([cached]);
+      setOptions(cached ? [cached] : []);
     }
   }, [isMounted, initialValue]);
 
@@ -47,7 +47,7 @@ const Autocomplete = ({
     if (!isMounted) return;
 
     if (!inputValue.trim()) {
-      if (selected) {
+      if (selected && selected.name) {
         setOptions([selected]);
       } else {
         setOptions([]);
@@ -60,9 +60,9 @@ const Autocomplete = ({
     fetch(apiEndpoint + "?query=" + inputValue)
       .then((response) => response.json())
       .then((data) => {
-        const results = (data.results || []).map(getCachedItem);
+        const results = (data.results || []).map(getCachedItem).filter(Boolean);
 
-        if (selected) {
+        if (selected && selected.name) {
           const selectedInResults = results.find(r => r.name === selected.name);
 
           if (selectedInResults) {
@@ -81,9 +81,22 @@ const Autocomplete = ({
         console.error('Search error:', error);
         setIsLoading(false);
       });
-  }, [inputValue, apiEndpoint, isMounted]);
+  }, [inputValue, apiEndpoint, isMounted, selected]);
 
   const handleChange = (newValue) => {
+    s
+    if (!newValue) {
+      setSelected(null);
+      setInputValue('');
+      setOptions([]);
+      itemsCache.current.clear();
+
+      if (onSelectionChange) {
+        onSelectionChange(null);
+      }
+      return;
+    }
+
     const cached = getCachedItem(newValue);
     setSelected(cached);
     setInputValue('');
@@ -92,11 +105,10 @@ const Autocomplete = ({
       setOptions([cached]);
     } else {
       setOptions([]);
-      itemsCache.current.clear();
     }
 
     if (onSelectionChange) {
-      onSelectionChange(newValue || {});
+      onSelectionChange(cached || {});
     }
   };
 
@@ -118,22 +130,25 @@ const Autocomplete = ({
       onChange={handleChange}
       onInputChange={handleInputChange}
       inputValue={inputValue}
-      getOptionValue={(opt) => opt.name}
-      getOptionLabel={(opt) => opt.searchable_name}
+      getOptionValue={(opt) => opt?.name || ''}
+      getOptionLabel={(opt) => opt?.searchable_name || ''}
       isClearable
+      components={{
+        DropdownIndicator: null,
+      }}
       isLoading={isLoading}
       placeholder={placeholder}
       noOptionsMessage={() => inputValue ? 'No results' : 'Type to search'}
       formatOptionLabel={(opt) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {opt.name && (
+          {opt?.name && (
             <img
               src={getImageUrl(opt.name)}
               alt={opt.searchable_name}
               style={{ width: '20px', height: '20px', objectFit: 'contain' }}
             />
           )}
-          <span>{opt.searchable_name}</span>
+          <span>{opt?.searchable_name}</span>
         </div>
       )}
       className="autocomplete-container"
